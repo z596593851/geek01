@@ -18,52 +18,18 @@ public class AgentMain {
     private static final String APP_ID_PARAMS_KEY = "appId";
     public static String agentId = "";
     public static String appId = "";
-
-    public static void premain(String agentArgument, Instrumentation instrumentation) {
-
-        if (agentArgument == null) {
-            return;
-        }
-        String[] parts = agentArgument.split(",");
-        for (String item : parts) {
-            if (!item.contains(":")) {
-                continue;
-            }
-            String[] keyVals = item.split(":");
-            if (keyVals.length != 2) {
-                continue;
-            }
-            if (APP_ID_PARAMS_KEY.equals(keyVals[0])) {
-                appId = keyVals[1];
-            } else if (AGENT_ID_PARAMS_KEY.equals(keyVals[0])) {
-                agentId = keyVals[1];
-            } else if (AGENT_TYPE_PARAMS_KEY.equals(keyVals[0])) {
-                agentType = keyVals[1];
-            }
-
-        }
-        System.out.println(appId + "\t" + agentType + "\t" + agentId);
-        Tracer.getInstance().addSpanLifecycleListener(new DapperSpanLifecycleListener());
-
-        initPlugins();
-        instrumentation.addTransformer(new MyClassFileTransformer(), true);
-    }
-
-
+    //要增强的类
     public static Set<String> pluginClassNameSet = new HashSet<>();
-
+    //要增强的类和方法
     public static Map<String, List<AspectInfo>> pluginMaps = new ConcurrentHashMap<>();
+
     public static void initPlugins() {
-
         List<Class> clz = new ArrayList<>();
-
-
         Class[] clzCommon = new Class[] {
                 MyHttpServletAdviceAdapter.class,
                 JedisCmdAdviceAdapter.class
         };
         clz.addAll(Arrays.asList(clzCommon));
-
         for (Class cls : clz) {
             Aspect anno = (Aspect) cls.getAnnotation(Aspect.class);
             if (anno == null) continue;
@@ -111,7 +77,40 @@ public class AgentMain {
                 classInfo.onAfterMethod = onReturnMethod;
                 classInfo.onBeforeMethod = onBeforeMethod;
             }
-
         }
     }
+
+    public static void premain(String agentArgument, Instrumentation instrumentation) {
+
+        if (agentArgument == null) {
+            return;
+        }
+        String[] parts = agentArgument.split(",");
+        for (String item : parts) {
+            if (!item.contains(":")) {
+                continue;
+            }
+            String[] keyVals = item.split(":");
+            if (keyVals.length != 2) {
+                continue;
+            }
+            if (APP_ID_PARAMS_KEY.equals(keyVals[0])) {
+                appId = keyVals[1];
+            } else if (AGENT_ID_PARAMS_KEY.equals(keyVals[0])) {
+                agentId = keyVals[1];
+            } else if (AGENT_TYPE_PARAMS_KEY.equals(keyVals[0])) {
+                agentType = keyVals[1];
+            }
+
+        }
+        System.out.println(appId + "\t" + agentType + "\t" + agentId);
+        Tracer.getInstance().addSpanLifecycleListener(new DapperSpanLifecycleListener());
+
+        initPlugins();
+        instrumentation.addTransformer(new MyClassFileTransformer(), true);
+    }
+
+
+
+
 }

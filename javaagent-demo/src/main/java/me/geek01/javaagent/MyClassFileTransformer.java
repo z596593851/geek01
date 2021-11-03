@@ -17,7 +17,7 @@ public class MyClassFileTransformer implements ClassFileTransformer {
     @Override
     public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classBytes) throws IllegalClassFormatException {
 
-        // 处理常用库注入
+        // 要增强的类：javax/servlet/http/HttpServlet
         if (AgentMain.pluginClassNameSet.contains(className)) {
             Log.info("transform: servlet");
             ClassReader cr = new ClassReader(classBytes);
@@ -52,11 +52,14 @@ public class MyClassFileTransformer implements ClassFileTransformer {
             for (AspectInfo item : aspectInfoList) {
                 String aspectMethodName = item.methodName;
                 String aspectMethodDesc = item.methodDesc;
+                //如果不是要增强的方法(service)，则跳过 "service (Ljavax/servlet/ServletRequest;Ljavax/servlet/ServletResponse;)V"
                 if (!Wildcard.equalsOrMatch(methodName, aspectMethodName) || !Wildcard.equalsOrMatch(methodDesc, aspectMethodDesc)) {
                     continue;
                 }
                 Class<? extends AdviceAdapter>  clz = item.clz;
                 try {
+                    // 调 MyHttpServletAdviceAdapter 的构造方法，返回它的实例
+                    // AdviceAdapter本身也是一个MethodVisitor
                     return ConstructorUtils.invokeConstructor(clz,
                             mv, access, methodName, methodDesc, appId, item);
                 } catch (Exception e) {
